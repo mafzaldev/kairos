@@ -1,0 +1,53 @@
+{
+  "name": "kairos",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A secure, minimal command-line TOTP authenticator",
+  "keywords": [
+    "totp",
+    "2fa",
+    "otp",
+    "authenticator",
+    "cli"
+  ],
+  "type": "module",
+  "bin": {
+    "kairos": "dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20.12.0"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "dependencies": {
+    "@clack/core": "^1.6.0",
+    "clipboardy": "^5.3.2",
+    "commander": "^14.0.3",
+    "jpeg-js": "^0.4.4",
+    "jsqr": "^1.4.0",
+    "pngjs": "^7.0.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^20.19.43",
+    "@types/pngjs": "^6.0.5",
+    "eslint": "^10.15.0",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.10.1",
+    "tsup": "^9.0.0",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.73.0",
+    "vitest": "^5.1.1"
+  }
+}
