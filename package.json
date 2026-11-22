@@ -1,6 +1,6 @@
 {
   "name": "@mafzaldev/kairos",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "A secure, minimal command-line TOTP authenticator",
   "keywords": [
     "totp",
