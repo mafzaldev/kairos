@@ -124,8 +124,7 @@ kairos list                  # names and issuers only
 
 If a query matches several accounts equally well, kairos lists them instead of guessing.
 
-`watch` draws on the terminal's alternate screen, so when you quit your previous screen comes back
-and no codes are left in the scrollback.
+`watch` redraws its lines in place, in the same terminal, until you press `q`.
 
 ### Managing accounts
 

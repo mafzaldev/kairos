@@ -51,15 +51,10 @@ export function frame(list: readonly Row[], size: { columns: number; rows: numbe
   return [...lines.slice(0, shown), c.dim(clip(`… ${lines.length - shown} more`, size.columns))];
 }
 
-const ALT_SCREEN = "\u001b[?1049h";
-const MAIN_SCREEN = "\u001b[?1049l";
 export const HIDE_CURSOR = "\u001b[?25l";
 export const SHOW_CURSOR = "\u001b[?25h";
 export const CLEAR_LINE = "\u001b[K";
-const HOME = "\u001b[H";
 const CLEAR_BELOW = "\u001b[J";
-
-const HELP = "kairos watch · press q or Ctrl+C to exit";
 
 const SIGNALS = ["SIGINT", "SIGTERM", "SIGHUP"] as const;
 const QUIT_KEYS = ["q", "Q", "\r", "\u0003", "\u0004"]; // q, Enter, Ctrl+C, Ctrl+D
@@ -122,15 +117,19 @@ export async function watch(ctx: Context): Promise<void> {
     } else if (ctx.tty) {
       const { stdout } = process;
       const c = colors(wantsColor(stdout));
+      // Drawn in place: each redraw moves back up over the lines of the last one.
+      let drawn = 0;
       const draw = () => {
-        const columns = stdout.columns || 80;
-        const body = frame(rows(accounts, ctx.clock()), { columns, rows: (stdout.rows || 24) - 2 }, c);
-        const lines = [c.dim(clip(HELP, columns)), "", ...body];
-        stdout.write(HOME + lines.map((line) => line + CLEAR_LINE).join("\n") + CLEAR_BELOW);
+        const size = { columns: stdout.columns || 80, rows: (stdout.rows || 24) - 3 };
+        const list = rows(accounts, ctx.clock());
+        // Measured without colour codes, so the divider is as wide as the rows look.
+        const width = Math.max(...frame(list, size, colors(false)).map((line) => line.length));
+        const lines = [...frame(list, size, c), c.dim("─".repeat(width)), c.dim("q to quit")];
+        const up = drawn > 1 ? `\u001b[${drawn - 1}A` : "";
+        stdout.write(`${up}\r${lines.map((line) => line + CLEAR_LINE).join("\n")}${CLEAR_BELOW}`);
+        drawn = lines.length;
       };
-      // On the alternate screen: leaving it restores what was there before and
-      // keeps the codes out of the scrollback.
-      await live(draw, ALT_SCREEN + HIDE_CURSOR, SHOW_CURSOR + MAIN_SCREEN);
+      await live(draw, HIDE_CURSOR, `${SHOW_CURSOR}\n`);
     } else {
       // Nothing to refresh when piped: print one snapshot.
       const size = { columns: Infinity, rows: Infinity };
