@@ -29,15 +29,15 @@ export async function watch(input: string[], timeout = TIMEOUT): Promise<string>
   const decode = await decoder();
 
   // Raw RGBA at a fixed, letterboxed size, so the stream splits into frames by byte count.
-  // The light blur matters: the QR reader copes with soft edges far better than with camera noise.
-  const filter = `fps=4,scale=${WIDTH}:${HEIGHT}:force_original_aspect_ratio=decrease,pad=${WIDTH}:${HEIGHT}:(ow-iw)/2:(oh-ih)/2,gblur=sigma=1.4`;
+  // No blur: exports with many accounts make dense codes whose modules are only a few pixels wide.
+  const filter = `fps=4,scale=${WIDTH}:${HEIGHT}:force_original_aspect_ratio=decrease,pad=${WIDTH}:${HEIGHT}:(ow-iw)/2:(oh-ih)/2`;
   const ffmpeg = spawn("ffmpeg", ["-loglevel", "error", ...input, "-vf", filter, "-f", "rawvideo", "-pix_fmt", "rgba", "-"], {
     stdio: ["ignore", "pipe", "pipe"],
   });
 
   return new Promise((resolve, reject) => {
     const frame = Buffer.alloc(FRAME_SIZE);
-    let filled = 0;
+    const pixels = new Uint8ClampedArray(frame.buffer, frame.byteOffset, FRAME_SIZE);
     let complaints = "";
     let settled = false;
 
@@ -61,22 +61,31 @@ export async function watch(input: string[], timeout = TIMEOUT): Promise<string>
     ffmpeg.stderr.on("data", (chunk: Buffer) => {
       complaints += chunk.toString();
     });
-    ffmpeg.on("close", () => {
-      const reason = complaints.trim().split("\n").at(-1) ?? "";
-      finish(undefined, `Could not read from the camera. ${reason}`.trim());
-    });
-
-    ffmpeg.stdout.on("data", (chunk: Buffer) => {
-      for (let read = 0; read < chunk.length && !settled;) {
-        const copied = chunk.copy(frame, filled, read, read + Math.min(chunk.length - read, FRAME_SIZE - filled));
-        read += copied;
-        filled += copied;
-        if (filled === FRAME_SIZE) {
-          filled = 0;
-          const text = decode(new Uint8ClampedArray(frame.buffer, frame.byteOffset, FRAME_SIZE), WIDTH, HEIGHT);
-          if (text) finish(text);
+    // Decoding is asynchronous, so frames are pulled one at a time and ffmpeg
+    // waits while one is being read, instead of overwriting it.
+    const reading = (async () => {
+      let filled = 0;
+      for await (const chunk of ffmpeg.stdout as AsyncIterable<Buffer>) {
+        for (let read = 0; read < chunk.length && !settled;) {
+          const copied = chunk.copy(frame, filled, read, read + Math.min(chunk.length - read, FRAME_SIZE - filled));
+          read += copied;
+          filled += copied;
+          if (filled === FRAME_SIZE) {
+            filled = 0;
+            const text = await decode(pixels, WIDTH, HEIGHT);
+            if (text) finish(text);
+          }
         }
+        if (settled) break;
       }
+    })().catch((error: Error) => finish(undefined, `Could not read the QR code: ${error.message}`));
+
+    ffmpeg.on("close", () => {
+      // The last frame may still be decoding when ffmpeg exits.
+      void reading.then(() => {
+        const reason = complaints.trim().split("\n").at(-1) ?? "";
+        finish(undefined, `Could not read from the camera. ${reason}`.trim());
+      });
     });
   });
 }

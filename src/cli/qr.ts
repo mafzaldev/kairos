@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import { KairosError } from "../errors.js";
 
 const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
@@ -25,10 +26,15 @@ async function decodeImage(file: Buffer): Promise<Bitmap> {
 }
 
 /** Loads the QR library and returns a function that finds the code in RGBA pixels. */
-export async function decoder(): Promise<(pixels: Uint8ClampedArray, width: number, height: number) => string | undefined> {
-  // jsqr is CommonJS with a `default` property, hence the double default.
-  const jsQR = (await import("jsqr")).default.default;
-  return (pixels, width, height) => jsQR(pixels, width, height)?.data || undefined;
+export async function decoder(): Promise<(pixels: Uint8ClampedArray, width: number, height: number) => Promise<string | undefined>> {
+  const { prepareZXingModule, readBarcodes } = await import("zxing-wasm/reader");
+  // Left alone, the library downloads its WebAssembly from a CDN. Use the installed copy.
+  const wasm = createRequire(import.meta.url).resolve("zxing-wasm/reader/zxing_reader.wasm");
+  await prepareZXingModule({ overrides: { wasmBinary: readFileSync(wasm) }, fireImmediately: true });
+  return async (data, width, height) => {
+    const [result] = await readBarcodes({ data, width, height }, { formats: ["QRCode"], maxNumberOfSymbols: 1 });
+    return result?.text || undefined;
+  };
 }
 
 /** Returns the text in the QR code found in a PNG or JPEG file. */
@@ -58,7 +64,7 @@ export async function readQr(imagePath: string): Promise<string> {
   }
 
   const decode = await decoder();
-  const text = decode(pixels, image.width, image.height);
+  const text = await decode(pixels, image.width, image.height);
   if (!text) {
     throw new KairosError("No QR code found in the image. Use a sharp, uncropped screenshot of the code.");
   }
