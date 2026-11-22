@@ -11,7 +11,16 @@ _Kairos_ (καιρός) is Greek for "the right moment", which is all a one-time
 
 ## Installation
 
-Requires Node.js 20.12 or newer to run.
+Requires Node.js 20.12 or newer.
+
+```sh
+npm install -g @mafzaldev/kairos
+kairos --version
+```
+
+To uninstall, run `npm uninstall -g @mafzaldev/kairos`.
+
+To run it from source instead:
 
 ```sh
 git clone https://github.com/mafzaldev/kairos.git
@@ -19,10 +28,7 @@ cd kairos
 pnpm install        # or: npm install
 pnpm build          # or: npm run build  (bundles the CLI into dist/)
 npm link            # or: npm install -g .
-kairos --version
 ```
-
-To uninstall, run `npm unlink -g kairos`.
 
 ## Quick start
 
