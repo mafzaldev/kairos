@@ -9,16 +9,12 @@ import { init, passwd } from "./commands/setup.js";
 import { watch } from "./commands/watch.js";
 import type { Context } from "./context.js";
 
-// package.json sits one level above the bundle (dist/index.js), two above this file.
 function version(): string {
   for (const up of ["..", "../.."]) {
     try {
       const url = new URL(`${up}/package.json`, import.meta.url);
-      const manifest = JSON.parse(readFileSync(url, "utf8")) as {
-        name?: string;
-        version?: string;
-      };
-      if (manifest.name === "kairos" && manifest.version) return manifest.version;
+      const manifest = JSON.parse(readFileSync(url, "utf8")) as { version?: string };
+      if (manifest.version) return manifest.version;
     } catch {
       // not at this level
     }
