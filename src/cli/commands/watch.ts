@@ -53,31 +53,26 @@ export function frame(list: readonly Row[], size: { columns: number; rows: numbe
 
 const ALT_SCREEN = "\u001b[?1049h";
 const MAIN_SCREEN = "\u001b[?1049l";
-const HIDE_CURSOR = "\u001b[?25l";
-const SHOW_CURSOR = "\u001b[?25h";
+export const HIDE_CURSOR = "\u001b[?25l";
+export const SHOW_CURSOR = "\u001b[?25h";
+export const CLEAR_LINE = "\u001b[K";
 const HOME = "\u001b[H";
-const CLEAR_LINE = "\u001b[K";
 const CLEAR_BELOW = "\u001b[J";
 
 const HELP = "kairos watch · press q or Ctrl+C to exit";
-const SIGNALS = ["SIGINT", "SIGTERM", "SIGHUP"] as const;
-const QUIT_KEYS = ["q", "Q", "\u0003", "\u0004"]; // q, Ctrl+C, Ctrl+D
 
-// Redraws every second on the alternate screen. Leaving it restores what was
-// on screen before and keeps the codes out of the scrollback.
-function live(accounts: readonly Account[], clock: () => number): Promise<void> {
+const SIGNALS = ["SIGINT", "SIGTERM", "SIGHUP"] as const;
+const QUIT_KEYS = ["q", "Q", "\r", "\u0003", "\u0004"]; // q, Enter, Ctrl+C, Ctrl+D
+
+/**
+ * Calls `draw` once a second until the user quits. `enter` is written to the
+ * terminal first and `leave` afterwards, however the process ends.
+ */
+export function live(draw: () => void, enter: string, leave: string): Promise<void> {
   const { stdin, stdout } = process;
-  const c = colors(wantsColor(stdout));
 
   return new Promise((resolve) => {
     let timer: NodeJS.Timeout;
-
-    const draw = () => {
-      const columns = stdout.columns || 80;
-      const body = frame(rows(accounts, clock()), { columns, rows: (stdout.rows || 24) - 2 }, c);
-      const lines = [c.dim(clip(HELP, columns)), "", ...body];
-      stdout.write(HOME + lines.map((line) => line + CLEAR_LINE).join("\n") + CLEAR_BELOW);
-    };
 
     const tick = () => {
       draw();
@@ -85,7 +80,7 @@ function live(accounts: readonly Account[], clock: () => number): Promise<void> 
       timer = setTimeout(tick, 1000 - (Date.now() % 1000) + 10);
     };
 
-    const restore = () => stdout.write(SHOW_CURSOR + MAIN_SCREEN);
+    const restore = () => stdout.write(leave);
 
     const stop = () => {
       clearTimeout(timer);
@@ -114,7 +109,7 @@ function live(accounts: readonly Account[], clock: () => number): Promise<void> 
       stdin.on("data", onKey);
     }
 
-    stdout.write(ALT_SCREEN + HIDE_CURSOR);
+    stdout.write(enter);
     tick();
   });
 }
@@ -125,7 +120,17 @@ export async function watch(ctx: Context): Promise<void> {
     if (accounts.length === 0) {
       ctx.err("No accounts yet. Add one with `kairos add`.");
     } else if (ctx.tty) {
-      await live(accounts, ctx.clock);
+      const { stdout } = process;
+      const c = colors(wantsColor(stdout));
+      const draw = () => {
+        const columns = stdout.columns || 80;
+        const body = frame(rows(accounts, ctx.clock()), { columns, rows: (stdout.rows || 24) - 2 }, c);
+        const lines = [c.dim(clip(HELP, columns)), "", ...body];
+        stdout.write(HOME + lines.map((line) => line + CLEAR_LINE).join("\n") + CLEAR_BELOW);
+      };
+      // On the alternate screen: leaving it restores what was there before and
+      // keeps the codes out of the scrollback.
+      await live(draw, ALT_SCREEN + HIDE_CURSOR, SHOW_CURSOR + MAIN_SCREEN);
     } else {
       // Nothing to refresh when piped: print one snapshot.
       const size = { columns: Infinity, rows: Infinity };

@@ -1,9 +1,10 @@
-import { label } from "../../account.js";
 import { KairosError } from "../../errors.js";
-import { remaining, totp } from "../../otp/totp.js";
+import { totp } from "../../otp/totp.js";
+import { colors, wantsColor } from "../../style.js";
 import { findAccount } from "../../vault/accounts.js";
 import type { Context } from "../context.js";
 import { withVault } from "../session.js";
+import { CLEAR_LINE, HIDE_CURSOR, SHOW_CURSOR, frame, live, rows } from "./watch.js";
 
 async function copy(text: string): Promise<void> {
   try {
@@ -19,21 +20,23 @@ async function copy(text: string): Promise<void> {
 }
 
 export async function code(ctx: Context, query: string, options: { copy?: boolean }) {
-  const result = await withVault(ctx, (vault) => {
+  await withVault(ctx, async (vault) => {
     const account = findAccount(vault.accounts, query, true);
-    const now = ctx.clock();
-    return {
-      name: label(account),
-      code: totp(account, now),
-      seconds: remaining(account.period, now),
-    };
+    if (options.copy) {
+      await copy(totp(account, ctx.clock()));
+      ctx.err("Copied to the clipboard.");
+    }
+
+    // The same line `kairos watch` shows for this account.
+    const c = colors(ctx.tty && wantsColor(process.stdout));
+    const line = () => frame(rows([account], ctx.clock()), { columns: Infinity, rows: Infinity }, c).join("");
+
+    if (!ctx.tty) {
+      ctx.out(line());
+      return;
+    }
+    // In a terminal the line stays and counts down, moving on to each new code, until a key is pressed.
+    const hint = c.dim("  q to quit");
+    await live(() => process.stdout.write(`\r${line()}${hint}${CLEAR_LINE}`), HIDE_CURSOR, `${SHOW_CURSOR}\n`);
   });
-
-  // The code comes first so it is easy to pick out with cut or awk.
-  ctx.out(`${result.code}  (${result.name}, ${result.seconds}s remaining)`);
-
-  if (options.copy) {
-    await copy(result.code);
-    ctx.err("Copied to the clipboard.");
-  }
 }

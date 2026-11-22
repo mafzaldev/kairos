@@ -35,7 +35,7 @@ npm link            # or: npm install -g .
 ```sh
 kairos init                 # choose a master password
 kairos add                  # fill in the form, check the code preview, save
-kairos code github          # 482913  (GitHub:alice@example.com, 17s remaining)
+kairos code github          # GitHub:alice@example.com  482 913  ██████░░░░  17s
 kairos watch                # live view of every code
 ```
 

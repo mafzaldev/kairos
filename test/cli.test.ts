@@ -104,7 +104,7 @@ describe("add", () => {
     h.reset();
     expect(await h.kairos("code", "alice")).toBe(0);
     // SHA1, 6 digits, 30 s period: the tail of the RFC 6238 vector for T = 59.
-    expect(h.out).toEqual(["287082  (GitHub:alice, 1s remaining)"]);
+    expect(h.out).toEqual(["GitHub:alice  287 082  ░░░░░░░░░░   1s"]);
   });
 
   it("pre-fills the name given on the command line and asks for the secret", async () => {
@@ -131,7 +131,7 @@ describe("add", () => {
 
     h.reset();
     await h.kairos("code", "big");
-    expect(h.out[0]).toMatch(/^90693936 /);
+    expect(h.out[0]).toContain("9069 3936");
   });
 
   it("saves nothing when the form is cancelled", async () => {
@@ -188,7 +188,7 @@ describe("add-uri and import-qr", () => {
 
     h.reset();
     await h.kairos("code", "example");
-    expect(h.out[0]).toMatch(/^94287082 /);
+    expect(h.out[0]).toContain("9428 7082");
   });
 
   it("lets the user rename the account in the form", async () => {
@@ -216,7 +216,7 @@ describe("add-uri and import-qr", () => {
 
       h.reset();
       await h.kairos("code", "alice");
-      expect(h.out[0]).toMatch(/^287082 /);
+      expect(h.out[0]).toContain("287 082");
     },
   );
 
@@ -281,7 +281,7 @@ describe("list, code, rename and remove", () => {
     ]) {
       h.reset();
       expect(await h.kairos("code", query), query).toBe(0);
-      expect(h.out[0], query).toMatch(/^287082 {2}\(/);
+      expect(h.out[0], query).toContain("287 082");
     }
   });
 
@@ -454,10 +454,10 @@ describe("export and import", () => {
 
       other.reset();
       await other.kairos("code", "alice");
-      expect(other.out[0]).toMatch(/^287082 /);
+      expect(other.out[0]).toContain("287 082");
       other.reset();
       await other.kairos("code", "big");
-      expect(other.out[0]).toMatch(/^693936 /);
+      expect(other.out[0]).toContain("693 936");
     } finally {
       other.cleanup();
     }
