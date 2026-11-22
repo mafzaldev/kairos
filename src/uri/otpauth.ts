@@ -38,12 +38,6 @@ export function parse(text: string): Account {
     throw new UriError(`Not a valid URI. Expected something like ${EXAMPLE}`);
   }
 
-  if (url.protocol === "otpauth-migration:") {
-    throw new UriError(
-      "This is a Google Authenticator bulk-export code (otpauth-migration://), which is not supported. " +
-        "Add each account from the website's own setup QR code or secret instead.",
-    );
-  }
   if (url.protocol !== "otpauth:") {
     throw new UriError(`Not an otpauth:// URI. Expected something like ${EXAMPLE}`);
   }

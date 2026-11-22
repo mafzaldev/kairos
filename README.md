@@ -74,8 +74,31 @@ kairos import-qr ~/Pictures/github-2fa.png
 Both open the same form, pre-filled, so you can rename the account before saving. The secret comes
 from the URI and is not asked again.
 
-Only time-based codes are supported. `otpauth://hotp` (counter-based) URIs are rejected, as are
-Google Authenticator's bulk-export `otpauth-migration://` codes.
+Only time-based codes are supported. `otpauth://hotp` (counter-based) URIs are rejected.
+
+### Moving from Google Authenticator
+
+In Google Authenticator, choose _Transfer accounts_ → _Export accounts_. It shows one or more QR
+codes that hold all the selected accounts. Take a screenshot or photo of each and import it:
+
+```sh
+kairos import-qr ~/Pictures/google-export-1.png
+```
+
+kairos lists the accounts in the code and asks once before adding them:
+
+```
+Google Authenticator export, part 1 of 2:
+  GitHub:alice@example.com
+  AWS:root
+? Import these 2 accounts?  ○ Yes  ● No
+```
+
+Accounts you already have are skipped, so importing the same code twice is harmless. Counter-based
+(HOTP) entries are left out. If the export was split across several QR codes, import each one.
+
+An export screenshot contains every secret in it, unencrypted. Delete the image (and empty the
+trash) as soon as the import has worked.
 
 ### Getting codes
 

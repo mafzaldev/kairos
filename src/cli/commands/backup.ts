@@ -1,9 +1,8 @@
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
-import { label, type Account } from "../../account.js";
 import { KairosError, WrongPasswordError } from "../../errors.js";
 import * as otpauth from "../../uri/otpauth.js";
-import { findExisting, sortAccounts } from "../../vault/accounts.js";
+import { merge, sortAccounts, type Merged } from "../../vault/accounts.js";
 import { unpack } from "../../vault/format.js";
 import { vaultPath } from "../../vault/paths.js";
 import type { Vault } from "../../vault/vault.js";
@@ -66,9 +65,19 @@ async function decrypt(ctx: Context, vault: Vault, password: Buffer, backup: Buf
   return accounts;
 }
 
-const same = (a: Account, b: Account) => a.secret.equals(b.secret) && a.algorithm === b.algorithm && a.digits === b.digits && a.period === b.period;
-
 const count = (n: number, noun: string) => `${n} ${noun}${n === 1 ? "" : "s"}`;
+
+/** Prints the outcome of a merge. `hint` says how to deal with the conflicts. */
+export function report(ctx: Context, result: Merged, hint: string): void {
+  const notes = [result.replaced && `${result.replaced} replaced`, result.unchanged && `${result.unchanged} already present`].filter(Boolean);
+  ctx.out(`Imported ${count(result.added, "new account")}${notes.length ? ` (${notes.join(", ")})` : ""}.`);
+  if (result.conflicts.length > 0) {
+    ctx.err(
+      `Skipped ${count(result.conflicts.length, "account")} whose secret or settings differ from the vault's ` +
+        `(${hint}):\n${result.conflicts.map((name) => `  - ${name}`).join("\n")}`,
+    );
+  }
+}
 
 export async function importBackup(ctx: Context, file: string, options: { overwrite?: boolean }): Promise<void> {
   if (!existsSync(file)) {
@@ -79,38 +88,8 @@ export async function importBackup(ctx: Context, file: string, options: { overwr
   unpack(backup);
 
   await withVault(ctx, async (vault, password) => {
-    let added = 0;
-    let replaced = 0;
-    let unchanged = 0;
-    const conflicts: string[] = [];
-
-    for (const incoming of await decrypt(ctx, vault, password, backup)) {
-      const existing = findExisting(vault.accounts, incoming);
-      if (!existing) {
-        vault.accounts.push(incoming);
-        added++;
-      } else if (same(existing, incoming)) {
-        incoming.secret.fill(0);
-        unchanged++;
-      } else if (options.overwrite) {
-        vault.accounts[vault.accounts.indexOf(existing)] = incoming;
-        existing.secret.fill(0);
-        replaced++;
-      } else {
-        conflicts.push(label(incoming));
-        incoming.secret.fill(0);
-      }
-    }
-
-    if (added + replaced > 0) vault.save();
-
-    const notes = [replaced && `${replaced} replaced`, unchanged && `${unchanged} already present`].filter(Boolean);
-    ctx.out(`Imported ${count(added, "new account")}${notes.length ? ` (${notes.join(", ")})` : ""}.`);
-    if (conflicts.length > 0) {
-      ctx.err(
-        `Skipped ${count(conflicts.length, "account")} whose secret or settings differ from the vault's ` +
-          `(use --overwrite to replace them):\n${conflicts.map((name) => `  - ${name}`).join("\n")}`,
-      );
-    }
+    const result = merge(vault.accounts, await decrypt(ctx, vault, password, backup), options.overwrite);
+    if (result.added + result.replaced > 0) vault.save();
+    report(ctx, result, "use --overwrite to replace them");
   });
 }

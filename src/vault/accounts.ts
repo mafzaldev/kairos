@@ -60,3 +60,44 @@ export function findAccount(accounts: readonly Account[], text: string, fuzzy = 
 export function sortAccounts(accounts: readonly Account[]): Account[] {
   return [...accounts].sort((a, b) => fold(a.issuer).localeCompare(fold(b.issuer)) || fold(a.name).localeCompare(fold(b.name)));
 }
+
+export interface Merged {
+  added: number;
+  replaced: number;
+  unchanged: number;
+  /** Labels of accounts that exist with a different secret or settings and were not replaced. */
+  conflicts: string[];
+}
+
+/**
+ * Adds `incoming` to `accounts`. An account that is already there is kept as it
+ * is, unless it differs and `overwrite` is set. Secrets that are not kept are wiped.
+ */
+export function merge(accounts: Account[], incoming: readonly Account[], overwrite = false): Merged {
+  const result: Merged = { added: 0, replaced: 0, unchanged: 0, conflicts: [] };
+  for (const account of incoming) {
+    const existing = findExisting(accounts, account);
+    const same =
+      existing &&
+      existing.secret.equals(account.secret) &&
+      existing.algorithm === account.algorithm &&
+      existing.digits === account.digits &&
+      existing.period === account.period;
+
+    if (!existing) {
+      accounts.push(account);
+      result.added++;
+    } else if (same) {
+      account.secret.fill(0);
+      result.unchanged++;
+    } else if (overwrite) {
+      accounts[accounts.indexOf(existing)] = account;
+      existing.secret.fill(0);
+      result.replaced++;
+    } else {
+      result.conflicts.push(label(account));
+      account.secret.fill(0);
+    }
+  }
+  return result;
+}

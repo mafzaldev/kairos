@@ -60,13 +60,13 @@ export function program(ctx: Context): Command {
 
   cli
     .command("add-uri")
-    .description("add an account from an otpauth://totp URI")
+    .description("add an account from an otpauth://totp URI (or a Google Authenticator export)")
     .argument("<uri>", "otpauth://totp/... URI (quote it)")
     .action((uri: string) => addUri(ctx, uri));
 
   cli
     .command("import-qr")
-    .description("add an account from a QR code image (PNG or JPEG)")
+    .description("add accounts from a QR code image, including Google Authenticator exports")
     .argument("<image>", "path of the image file")
     .action((image: string) => importQr(ctx, image));
 
