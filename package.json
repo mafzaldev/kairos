@@ -1,6 +1,6 @@
 {
   "name": "kairos",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "description": "A secure, minimal command-line TOTP authenticator",
   "keywords": [
@@ -10,6 +10,14 @@
     "authenticator",
     "cli"
   ],
+  "homepage": "https://github.com/mafzaldev/kairos#readme",
+  "bugs": {
+    "url": "https://github.com/mafzaldev/kairos/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mafzaldev/kairos.git"
+  },
   "type": "module",
   "bin": {
     "kairos": "dist/index.js"

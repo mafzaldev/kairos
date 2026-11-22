@@ -14,7 +14,7 @@ _Kairos_ (καιρός) is Greek for "the right moment", which is all a one-time
 Requires Node.js 20.12 or newer to run.
 
 ```sh
-git clone <this repository> kairos
+git clone https://github.com/mafzaldev/kairos.git
 cd kairos
 pnpm install        # or: npm install
 pnpm build          # or: npm run build  (bundles the CLI into dist/)
