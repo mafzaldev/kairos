@@ -112,6 +112,7 @@ export function createHarness(): Harness {
     out: (line) => void out.push(line),
     err: (line) => void err.push(line),
     prompts,
+    session: { key: () => Promise.resolve(undefined), start: () => false, end: () => Promise.resolve() },
     interactive: true,
     tty: false,
     scrypt: FAST_SCRYPT,

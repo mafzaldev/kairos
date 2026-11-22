@@ -24,9 +24,13 @@ export async function exportBackup(ctx: Context, file: string | undefined, optio
       return;
     }
     // The one place secrets are deliberately turned into printable text.
-    await withVault(ctx, (vault) => {
-      for (const account of sortAccounts(vault.accounts)) ctx.out(otpauth.format(account));
-    });
+    await withVault(
+      ctx,
+      (vault) => {
+        for (const account of sortAccounts(vault.accounts)) ctx.out(otpauth.format(account));
+      },
+      { fresh: true },
+    );
     return;
   }
 
@@ -50,8 +54,8 @@ export async function exportBackup(ctx: Context, file: string | undefined, optio
 
 // A backup is locked with the master password in use when it was made. Try the
 // vault's own key, then the current password, and only then ask.
-async function decrypt(ctx: Context, vault: Vault, password: Buffer, backup: Buffer) {
-  for (const secret of [undefined, password]) {
+async function decrypt(ctx: Context, vault: Vault, password: Buffer | undefined, backup: Buffer) {
+  for (const secret of password ? [undefined, password] : [undefined]) {
     try {
       return await vault.readBackup(backup, secret);
     } catch (error) {

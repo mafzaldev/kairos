@@ -31,7 +31,7 @@ function writeAtomic(target: string, data: Buffer): void {
 export class Vault {
   private constructor(
     readonly path: string,
-    private key: Key,
+    public key: Key,
     public accounts: Account[],
   ) {}
 
@@ -49,8 +49,9 @@ export class Vault {
     return vault;
   }
 
-  static async open(file: string, password: Buffer): Promise<Vault> {
-    const { key, accounts } = await open(readFileSync(file), password);
+  /** Opens with the master password, or with a key a session has kept. */
+  static async open(file: string, secret: Buffer | Key): Promise<Vault> {
+    const { key, accounts } = await open(readFileSync(file), secret);
     return new Vault(file, key, accounts);
   }
 

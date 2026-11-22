@@ -1,11 +1,12 @@
 import { readFileSync } from "node:fs";
 import { Command } from "commander";
 import { NoTerminalError } from "../errors.js";
+import * as agent from "./agent.js";
 import { add, addUri, importQr, scan } from "./commands/add.js";
 import { exportBackup, importBackup } from "./commands/backup.js";
 import { code } from "./commands/code.js";
 import { list, remove, rename } from "./commands/manage.js";
-import { init, passwd } from "./commands/setup.js";
+import { init, lock, passwd } from "./commands/setup.js";
 import { watch } from "./commands/watch.js";
 import type { Context } from "./context.js";
 
@@ -43,8 +44,8 @@ export function program(ctx: Context): Command {
     .exitOverride()
     // Every command needs a password or a confirmation, so refuse up front
     // rather than part-way through.
-    .hook("preAction", () => {
-      if (!ctx.interactive) throw new NoTerminalError();
+    .hook("preAction", (_cli, command) => {
+      if (!ctx.interactive && command.name() !== agent.COMMAND) throw new NoTerminalError();
     });
 
   cli
@@ -127,6 +128,17 @@ export function program(ctx: Context): Command {
     .command("passwd")
     .description("change the master password")
     .action(() => passwd(ctx));
+
+  cli
+    .command("lock")
+    .description("lock the vault now, so the next command asks for the master password")
+    .action(() => lock(ctx));
+
+  // Internal: the background process that holds the key during a session.
+  cli
+    .command(agent.COMMAND, { hidden: true })
+    .argument("<socket>")
+    .action((socket: string) => agent.serve(socket));
 
   return cli;
 }

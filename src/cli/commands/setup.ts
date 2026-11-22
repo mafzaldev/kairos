@@ -21,14 +21,25 @@ export async function init(ctx: Context): Promise<void> {
 }
 
 export async function passwd(ctx: Context): Promise<void> {
-  await withVault(ctx, async (vault) => {
-    const password = await ctx.prompts.newPassword();
-    try {
-      await vault.changePassword(password, ctx.scrypt);
-    } finally {
-      password.fill(0);
-    }
-  });
+  await withVault(
+    ctx,
+    async (vault) => {
+      const password = await ctx.prompts.newPassword();
+      try {
+        await vault.changePassword(password, ctx.scrypt);
+      } finally {
+        password.fill(0);
+      }
+    },
+    { fresh: true },
+  );
+  // Any session still holds the old key.
+  await ctx.session.end(vaultPath(ctx.env));
   ctx.out("Master password changed.");
   ctx.err("Backups made earlier are still encrypted with the old password.");
+}
+
+export async function lock(ctx: Context): Promise<void> {
+  await ctx.session.end(vaultPath(ctx.env));
+  ctx.out("Locked. The next command will ask for the master password.");
 }

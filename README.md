@@ -138,6 +138,19 @@ kairos passwd                 # change the master password
 Accounts are identified by issuer plus name, so `GitHub:alice` and `GitLab:alice` can coexist.
 `remove` and `rename` accept an exact name or an unambiguous part of it, but never a fuzzy match.
 
+### Staying unlocked
+
+You type the master password once, and kairos stays unlocked for 15 minutes:
+
+```sh
+kairos code github     # asks for the master password
+kairos code aws        # no prompt
+kairos lock            # forget it now instead of waiting
+```
+
+`kairos passwd` and `kairos export --plain` always ask for the password, whether or not you are
+unlocked. Sessions are not available on Windows, where every command asks.
+
 ### Backup and restore
 
 ```sh
@@ -195,6 +208,11 @@ How it works:
   JSON so that reading it never turns a secret into a JavaScript string. This is best effort:
   JavaScript strings cannot be wiped, so what you type at a prompt may linger until the process
   exits, and the operating system may swap memory to disk.
+- **Sessions.** While unlocked, the vault's key is held in the memory of a small background process
+  and never written to disk. Commands fetch it over a Unix socket in a directory only you can enter
+  (`$XDG_RUNTIME_DIR/kairos`). The process exits after 15 minutes, on `kairos lock`, or when the
+  password changes. During that window any program running as you could ask it for the key, which is
+  the same exposure as an unlocked `ssh-agent`; run `kairos lock` when you step away.
 - **No network access.** kairos never connects to anything. Codes depend on your system clock being
   right to within a few seconds.
 
