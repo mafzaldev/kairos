@@ -79,7 +79,19 @@ Only time-based codes are supported. `otpauth://hotp` (counter-based) URIs are r
 ### Moving from Google Authenticator
 
 In Google Authenticator, choose _Transfer accounts_ → _Export accounts_. It shows one or more QR
-codes that hold all the selected accounts. Take a screenshot or photo of each and import it:
+codes that hold all the selected accounts. Android blocks screenshots of that screen, so the
+simplest way is to show the phone to your computer's camera:
+
+```sh
+kairos scan
+```
+
+Hold the code up to the camera, close enough to fill most of the picture, until kairos says it has
+it. This needs [ffmpeg](https://ffmpeg.org) installed; nothing from the camera is saved to disk. Use
+`--device` to pick another camera, for example `kairos scan --device /dev/video2`. `scan` reads
+ordinary single-account setup codes too.
+
+If you do have an image of the code (a screenshot on iOS, or a photo), import that instead:
 
 ```sh
 kairos import-qr ~/Pictures/google-export-1.png

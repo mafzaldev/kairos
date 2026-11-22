@@ -24,6 +24,13 @@ async function decodeImage(file: Buffer): Promise<Bitmap> {
   throw new KairosError("Unsupported image format. Use a PNG or JPEG file.");
 }
 
+/** Loads the QR library and returns a function that finds the code in RGBA pixels. */
+export async function decoder(): Promise<(pixels: Uint8ClampedArray, width: number, height: number) => string | undefined> {
+  // jsqr is CommonJS with a `default` property, hence the double default.
+  const jsQR = (await import("jsqr")).default.default;
+  return (pixels, width, height) => jsQR(pixels, width, height)?.data || undefined;
+}
+
 /** Returns the text in the QR code found in a PNG or JPEG file. */
 export async function readQr(imagePath: string): Promise<string> {
   let file: Buffer;
@@ -50,11 +57,10 @@ export async function readQr(imagePath: string): Promise<string> {
     }
   }
 
-  // jsqr is CommonJS with a `default` property, hence the double default.
-  const jsQR = (await import("jsqr")).default.default;
-  const code = jsQR(pixels, image.width, image.height);
-  if (!code?.data) {
+  const decode = await decoder();
+  const text = decode(pixels, image.width, image.height);
+  if (!text) {
     throw new KairosError("No QR code found in the image. Use a sharp, uncropped screenshot of the code.");
   }
-  return code.data;
+  return text;
 }

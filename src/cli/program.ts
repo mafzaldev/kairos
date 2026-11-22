@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { Command } from "commander";
 import { NoTerminalError } from "../errors.js";
-import { add, addUri, importQr } from "./commands/add.js";
+import { add, addUri, importQr, scan } from "./commands/add.js";
 import { exportBackup, importBackup } from "./commands/backup.js";
 import { code } from "./commands/code.js";
 import { list, remove, rename } from "./commands/manage.js";
@@ -69,6 +69,12 @@ export function program(ctx: Context): Command {
     .description("add accounts from a QR code image, including Google Authenticator exports")
     .argument("<image>", "path of the image file")
     .action((image: string) => importQr(ctx, image));
+
+  cli
+    .command("scan")
+    .description("add accounts by showing a QR code to the camera (needs ffmpeg)")
+    .option("--device <name>", "camera to use instead of the system's first one")
+    .action((options: { device?: string }) => scan(ctx, options));
 
   cli
     .command("list")

@@ -3,6 +3,7 @@ import { KairosError } from "../../errors.js";
 import * as migration from "../../uri/migration.js";
 import * as otpauth from "../../uri/otpauth.js";
 import { findExisting, merge } from "../../vault/accounts.js";
+import * as camera from "../camera.js";
 import type { Context } from "../context.js";
 import { readQr } from "../qr.js";
 import { withVault } from "../session.js";
@@ -85,4 +86,11 @@ async function fromQr(ctx: Context, text: string): Promise<void> {
 
 export async function importQr(ctx: Context, image: string): Promise<void> {
   await fromQr(ctx, await readQr(image));
+}
+
+export async function scan(ctx: Context, options: { device?: string }): Promise<void> {
+  ctx.err("Hold the QR code up to the camera. Press Ctrl+C to cancel.");
+  const text = await camera.scan(options.device);
+  ctx.err("Got it.");
+  await fromQr(ctx, text);
 }
