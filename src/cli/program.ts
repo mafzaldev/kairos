@@ -5,7 +5,7 @@ import * as agent from "./agent.js";
 import { add, addUri, importQr, scan } from "./commands/add.js";
 import { exportBackup, importBackup } from "./commands/backup.js";
 import { code } from "./commands/code.js";
-import { list, remove, rename } from "./commands/manage.js";
+import { edit, list, remove } from "./commands/manage.js";
 import { init, lock, passwd } from "./commands/setup.js";
 import { watch } from "./commands/watch.js";
 import type { Context } from "./context.js";
@@ -103,11 +103,10 @@ export function program(ctx: Context): Command {
     .action((name: string) => remove(ctx, name));
 
   cli
-    .command("rename")
-    .description("rename an account")
-    .argument("<old>", "current account name")
-    .argument("<new>", "new account name")
-    .action((oldName: string, newName: string) => rename(ctx, oldName, newName));
+    .command("edit")
+    .description("edit an account in the form, pre-filled with its current values")
+    .argument("<name>", "account name (exact, or an unambiguous part)")
+    .action((name: string) => edit(ctx, name));
 
   cli
     .command("export")

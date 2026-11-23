@@ -68,7 +68,7 @@ describe("without a terminal", () => {
     ["code", "alice"],
     ["watch"],
     ["remove", "alice"],
-    ["rename", "alice", "bob"],
+    ["edit", "alice"],
     ["export", "backup.kairos"],
     ["export", "--plain"],
     ["import", "backup.kairos"],
@@ -244,7 +244,7 @@ describe("add-uri and import-qr", () => {
   });
 });
 
-describe("list, code, rename and remove", () => {
+describe("list, code and remove", () => {
   beforeEach(async () => {
     await h.kairos("init");
     await h.add("alice", { issuer: "GitHub" });
@@ -302,25 +302,6 @@ describe("list, code, rename and remove", () => {
     expect(await h.kairos("watch")).toBe(0);
     expect(h.out).toHaveLength(3);
     expect(h.out[0]).toMatch(/^personal {6}287 082 .* 1s$/);
-  });
-
-  it("renames an account", async () => {
-    expect(await h.kairos("rename", "personal", "home")).toBe(0);
-    expect(h.out).toEqual(["Renamed personal to home."]);
-    h.reset();
-    await h.kairos("list");
-    expect(h.out).toContain("home\t");
-    expect(h.out).not.toContain("personal\t");
-  });
-
-  it("refuses a rename that would collide", async () => {
-    expect(await h.kairos("rename", "alice", "Bob")).toBe(1);
-    expect(h.err[0]).toMatch(/"GitHub:Bob" already exists/);
-    expect(await h.kairos("rename", "alice", "  ")).toBe(1);
-  });
-
-  it("allows a rename that only changes case", async () => {
-    expect(await h.kairos("rename", "alice", "Alice")).toBe(0);
   });
 
   it("removes an account only after confirmation", async () => {
@@ -629,7 +610,8 @@ describe("program", () => {
     await h.kairos("list");
     await h.kairos("code", "alice");
     await h.kairos("watch");
-    await h.kairos("rename", "alice", "carol");
+    h.answers.form = { name: "carol" };
+    await h.kairos("edit", "alice");
     await h.kairos("export", path.join(h.dir, "b.kairos"));
     await h.kairos("import", path.join(h.dir, "b.kairos"));
     await h.kairos("remove", "carol");

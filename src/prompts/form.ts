@@ -58,7 +58,7 @@ async function askFields(draft: Partial<Account>, secretLocked: boolean): Promis
 }
 
 /**
- * The form behind `add`, `add-uri` and `import-qr`: one line per field, then a
+ * The form behind `add`, `add-uri`, `import-qr` and `edit`: one line per field, then a
  * preview of the current code to compare with the website before saving.
  */
 export async function accountForm(options: FormOptions): Promise<Account> {

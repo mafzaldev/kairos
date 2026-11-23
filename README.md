@@ -129,13 +129,15 @@ If a query matches several accounts equally well, kairos lists them instead of g
 ### Managing accounts
 
 ```sh
-kairos rename github github-work
-kairos remove github-work     # asks for confirmation
+kairos edit github            # opens the form with the current values
+kairos remove github          # asks for confirmation
 kairos passwd                 # change the master password
 ```
 
 Accounts are identified by issuer plus name, so `GitHub:alice` and `GitLab:alice` can coexist.
-`remove` and `rename` accept an exact name or an unambiguous part of it, but never a fuzzy match.
+`edit` lets you change any field. Leave the secret blank to keep the current one.
+
+`remove` and `edit` accept an exact name or an unambiguous part of it, but never a fuzzy match.
 
 ### Staying unlocked
 

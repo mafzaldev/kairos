@@ -1,6 +1,5 @@
-import { label } from "../../account.js";
+import { label, type Account } from "../../account.js";
 import { KairosError } from "../../errors.js";
-import { validateName } from "../../prompts/validate.js";
 import { findAccount, findExisting, sortAccounts } from "../../vault/accounts.js";
 import type { Context } from "../context.js";
 import { withVault } from "../session.js";
@@ -39,21 +38,23 @@ export async function remove(ctx: Context, query: string): Promise<void> {
   });
 }
 
-export async function rename(ctx: Context, query: string, newName: string): Promise<void> {
-  const name = newName.trim();
-  const problem = validateName(name);
-  if (problem) throw new KairosError(problem);
-
-  await withVault(ctx, (vault) => {
+export async function edit(ctx: Context, query: string): Promise<void> {
+  await withVault(ctx, async (vault) => {
     const account = findAccount(vault.accounts, query);
-    const renamed = { name, issuer: account.issuer };
-    if (findExisting(vault.accounts, renamed, account)) {
-      throw new KairosError(`An account named "${label(renamed)}" already exists.`);
-    }
+    const exists = (edited: Account) => (findExisting(vault.accounts, edited, account) ? `An account named "${label(edited)}" already exists.` : undefined);
 
-    const before = label(account);
-    account.name = name;
+    // The form wipes the secret it was given if it fails, so it gets a copy.
+    const edited = await ctx.prompts.accountForm({
+      initial: { ...account, secret: Buffer.from(account.secret) },
+      clock: ctx.clock,
+      check: exists,
+    });
+    const problem = exists(edited);
+    if (problem) throw new KairosError(problem);
+
+    vault.accounts[vault.accounts.indexOf(account)] = edited;
     vault.save();
-    ctx.out(`Renamed ${before} to ${label(account)}.`);
+    account.secret.fill(0);
+    ctx.out(`Updated ${label(edited)}.`);
   });
 }
