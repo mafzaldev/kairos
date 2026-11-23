@@ -1,12 +1,20 @@
 {
   "name": "@mafzaldev/kairos",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "A secure, minimal command-line TOTP authenticator",
   "keywords": [
     "totp",
     "2fa",
     "otp",
+    "mfa",
+    "two-factor",
     "authenticator",
+    "google-authenticator",
+    "otpauth",
+    "qr-code",
+    "rfc6238",
+    "encrypted",
+    "terminal",
     "cli"
   ],
   "homepage": "https://github.com/mafzaldev/kairos#readme",
